@@ -1,8 +1,11 @@
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import "./App.css";
-import StudentForm from "./components/StudentForm";
-import StudentTable from "./components/StudentTable";
-import SearchBar from "./components/SearchBar";
+
+import Layout from "./layout/Layout";
+
+import Dashboard from "./pages/Dashboard";
+import Students from "./pages/Students";
+import AddStudent from "./pages/AddStudent";
 
 function App() {
   const [students, setStudents] = useState(() => {
@@ -10,14 +13,22 @@ function App() {
     return savedStudents ? JSON.parse(savedStudents) : [];
   });
 
-  const [search, setSearch] = useState("");
-
   useEffect(() => {
     localStorage.setItem("students", JSON.stringify(students));
   }, [students]);
 
   const addStudent = (student) => {
-    setStudents([...students, student]);
+    const duplicate = students.find(
+      (s) => s.rollNo === student.rollNo
+    );
+
+    if (duplicate) {
+      alert("Roll Number already exists!");
+      return false;
+    }
+
+    setStudents((prev) => [...prev, student]);
+    return true;
   };
 
   const deleteStudent = (rollNo) => {
@@ -26,84 +37,49 @@ function App() {
     );
 
     if (confirmDelete) {
-      setStudents(
-        students.filter(
+      setStudents((prev) =>
+        prev.filter(
           (student) => student.rollNo !== rollNo
         )
       );
     }
   };
 
-  const filteredStudents = students.filter((student) =>
-    student.name.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const averageMarks =
-    students.length > 0
-      ? (
-          students.reduce(
-            (total, student) =>
-              total + Number(student.marks),
-            0
-          ) / students.length
-        ).toFixed(2)
-      : 0;
-
-  const topScorer =
-    students.length > 0
-      ? students.reduce((prev, current) =>
-          Number(prev.marks) > Number(current.marks)
-            ? prev
-            : current
-        )
-      : null;
-
   return (
-    <div className="container">
-      <h1>🎓 Smart Student Management System</h1>
+    <BrowserRouter>
+      <Layout>
+        <Routes>
+          <Route
+            path="/"
+            element={<Navigate to="/dashboard" />}
+          />
 
-      <p className="welcome-text">
-        Manage student records efficiently with search,
-        grades, statistics and performance tracking.
-      </p>
+          <Route
+            path="/dashboard"
+            element={<Dashboard students={students} />}
+          />
 
-      <div className="stats">
-        <div className="card">
-          <h3>Total Students</h3>
-          <p>{students.length}</p>
-        </div>
+          <Route
+            path="/students"
+            element={
+              <Students
+                students={students}
+                deleteStudent={deleteStudent}
+              />
+            }
+          />
 
-        <div className="card">
-          <h3>Average Marks</h3>
-          <p>{averageMarks}</p>
-        </div>
-
-        <div className="card">
-          <h3>🏆 Top Scorer</h3>
-          <p>
-            {topScorer
-              ? `${topScorer.name} (${topScorer.marks})`
-              : "N/A"}
-          </p>
-        </div>
-      </div>
-
-      <StudentForm addStudent={addStudent} />
-
-      <SearchBar
-        search={search}
-        setSearch={setSearch}
-      />
-
-      <StudentTable
-        students={filteredStudents}
-        deleteStudent={deleteStudent}
-      />
-
-      <footer className="footer">
-        Developed by Varsha Thakur
-      </footer>
-    </div>
+          <Route
+            path="/add"
+            element={
+              <AddStudent
+                addStudent={addStudent}
+              />
+            }
+          />
+        </Routes>
+      </Layout>
+    </BrowserRouter>
   );
 }
 
